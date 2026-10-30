@@ -62,27 +62,15 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-cortex_backbone_dir = "/research/cortex-paper/backbones"
-toponets_checkpoint_dir = "/research/mayukh/toponets_resnet50_imagenet_checkpoints"
-robust_rn50_l2_eps3_ckpt = os.path.join(cortex_backbone_dir, "robust_rn50_epsilon_3.0.pth")
-toponet_rn50_tau30_ckpt = os.path.join(
-    toponets_checkpoint_dir, "all_topo_scale_30_shrink_factor_3.0", "final_weights.pt"
-)
-toponets_rn50_tau1_shrink3_ckpt = os.path.join(
-    toponets_checkpoint_dir, "all_topo_scale_1_shrink_factor_3.0", "final_weights.pt"
-)
-vggface2_resnet50_ckpt = os.path.join(cortex_backbone_dir, "resnet50_vggface2.pth")
-arcface_r50_ms1mv3_onnx = os.path.join(cortex_backbone_dir, "ms1mv3_arcface_r50.onnx")
-arcface_onnx_path = os.path.expanduser("~/.insightface/models/buffalo_l/w600k_r50.onnx")
-toponet_rn18_tau10_ckpt = os.path.join(cortex_backbone_dir, "resnet18_tau_10.pt")
 
+# check readme for more info
 local_model_checkpoints = {
-    "resnet50_robust_l2_eps3": robust_rn50_l2_eps3_ckpt,
-    "resnet50_toponet_tau30": toponet_rn50_tau30_ckpt,
-    "resnet18_toponets_tau10": toponet_rn18_tau10_ckpt,
-    "arcface_r50_webface600k": arcface_onnx_path,
-    "arcface_r50_ms1mv3": arcface_r50_ms1mv3_onnx,
-    "resnet50_vggface2_official": vggface2_resnet50_ckpt,
+    "resnet50_robust_l2_eps3": "path to local checkpoint",
+    "resnet50_toponet_tau30": "path to local checkpoint",
+    "resnet18_toponets_tau10": "path to local checkpoint",
+    "arcface_r50_webface600k": "path to local checkpoint",
+    "arcface_r50_ms1mv3": "path to local checkpoint",
+    "resnet50_vggface2_official": "path to local checkpoint",
 }
 
 args = parser.parse_args()
