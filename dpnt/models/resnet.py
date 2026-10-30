@@ -44,7 +44,9 @@ def load_resnet50_robust_l2_eps3(
         local_checkpoint_path
     ), f"robust ResNet-50 checkpoint not found: {local_checkpoint_path}"
 
-    ckpt = torch.load(local_checkpoint_path, map_location="cpu", weights_only=False)["model"]
+    ckpt = torch.load(local_checkpoint_path, map_location="cpu", weights_only=False)[
+        "model"
+    ]
     prefix = "module.model."
     state_dict = {k[len(prefix) :]: v for k, v in ckpt.items() if k.startswith(prefix)}
 

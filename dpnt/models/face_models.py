@@ -17,7 +17,7 @@ def load_arcface_r50_webface600k(
     device: str = "cuda:0",
     freeze: bool = True,
 ) -> tuple[transforms.Compose, ONNXFaceEmbedder]:
-    
+
     assert os.path.exists(local_checkpoint_path), (
         f"ArcFace ONNX weights not found at {local_checkpoint_path}. Download them "
         "once with `from insightface.app import FaceAnalysis; "

@@ -28,7 +28,7 @@ def load_webssl_dino300m(dtype=torch.float32, device="cuda:0", freeze=True):
 
     # https://huggingface.co/facebook/webssl-dino300m-full2b-224/blob/main/preprocessor_config.json (shortest edge 224 bicubic, center crop 224, ImageNet mean/std)
     processor = AutoImageProcessor.from_pretrained(
-        "facebook/webssl-dino300m-full2b-224", backend="pil" 
+        "facebook/webssl-dino300m-full2b-224", backend="pil"
     )
     preprocessor = transforms.Lambda(
         lambda im: processor(images=im.convert("RGB"), return_tensors="pt")[
@@ -46,7 +46,7 @@ def load_webssl_mae300m(dtype=torch.float32, device="cuda:0", freeze=True):
 
     # https://huggingface.co/facebook/webssl-mae300m-full2b-224/blob/main/preprocessor_config.json (shortest edge 224 bicubic, center crop 224, ImageNet mean/std)
     processor = AutoImageProcessor.from_pretrained(
-        "facebook/webssl-mae300m-full2b-224", backend="pil" 
+        "facebook/webssl-mae300m-full2b-224", backend="pil"
     )
     preprocessor = transforms.Lambda(
         lambda im: processor(images=im.convert("RGB"), return_tensors="pt")[

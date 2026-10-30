@@ -457,7 +457,11 @@ def get_single_model(
     device: str = "cuda:0",
     local_checkpoint_path: str = None,
 ):
-    kwargs = {"local_checkpoint_path": local_checkpoint_path} if local_checkpoint_path else {}
+    kwargs = (
+        {"local_checkpoint_path": local_checkpoint_path}
+        if local_checkpoint_path
+        else {}
+    )
     preprocessor, model = full_model_registry[model_name]["loader"](
         dtype=dtype, device=device, **kwargs
     )
@@ -466,15 +470,17 @@ def get_single_model(
 
 class ModelRegistryManager:
     """Maintain manager to control for stuff like checkpoints and model loading."""
-    
+
     def __init__(self, local_model_checkpoints: dict = None):
         if local_model_checkpoints is None:
-            
-            print("\033[38;5;208m"
+
+            print(
+                "\033[38;5;208m"
                 "No local model checkpoints provided. Will skip toponet models (resnet50_toponet_tau30, resnet18_toponets_tau10), "
-                "arcface models (arcface_r50_webface600k, arcface_r50_ms1mv3), resnet50_vggface2_official, and resnet50_robust_l2_eps3." \
+                "arcface models (arcface_r50_webface600k, arcface_r50_ms1mv3), resnet50_vggface2_official, and resnet50_robust_l2_eps3."
                 "For instructions on how to download please check the README."
-                "\033[0m")
+                "\033[0m"
+            )
 
         self.local_model_checkpoints = local_model_checkpoints or {}
         assert isinstance(

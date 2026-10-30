@@ -39,12 +39,11 @@ result_columns = [
 ]
 
 
-
 ######################################################################
-# 
-# CFMT run funcs 
 #
-# 
+# CFMT run funcs
+#
+#
 ######################################################################
 
 
@@ -69,22 +68,24 @@ def run_all_models_cfmt(
         model_names = list(full_model_registry)
     else:
         if not isinstance(model_names, list):
-            raise TypeError(f"model_names must be a list, got {type(model_names).__name__}")
+            raise TypeError(
+                f"model_names must be a list, got {type(model_names).__name__}"
+            )
         unknown = [m for m in model_names if m not in full_model_registry]
         if unknown:
             raise ValueError(f"Unknown models: {unknown}")
 
-    model_registry = ModelRegistryManager(local_model_checkpoints=local_model_checkpoints)
+    model_registry = ModelRegistryManager(
+        local_model_checkpoints=local_model_checkpoints
+    )
     subject_mapper, name_normalizer = test_mappers(test_type, answer_key)
-    
+
     if embeddings_dir is not None:
         print(f"\033[92mEmbeddings will be saved to {embeddings_dir}\033[0m")
         os.makedirs(embeddings_dir, exist_ok=True)
 
     skipped = []
     with open(results_csv, "w", newline="") as results_file:
-
-        
 
         writer = csv.DictWriter(results_file, fieldnames=result_columns)
         writer.writeheader()
@@ -95,7 +96,9 @@ def run_all_models_cfmt(
 
             try:
                 # load
-                model_stuff = model_registry.get_model(model_name, dtype=dtype, device=device)
+                model_stuff = model_registry.get_model(
+                    model_name, dtype=dtype, device=device
+                )
                 preprocessor = model_stuff["preprocessor"]
                 model = model_stuff["model"]
 
@@ -118,24 +121,26 @@ def run_all_models_cfmt(
                 )
 
                 # run
-                rows, accuracy, trial_embeddings, bank_embeddings = run_single_model_cfmt(
-                    cfmt_dataset=cfmt_dataset,
-                    facebank_dataset=facebank_dataset,
-                    model=model,
-                    subject_mapper=subject_mapper,
-                    device=device,
-                    dtype=dtype,
-                    heldout=heldout,
+                rows, accuracy, trial_embeddings, bank_embeddings = (
+                    run_single_model_cfmt(
+                        cfmt_dataset=cfmt_dataset,
+                        facebank_dataset=facebank_dataset,
+                        model=model,
+                        subject_mapper=subject_mapper,
+                        device=device,
+                        dtype=dtype,
+                        heldout=heldout,
+                    )
                 )
 
                 # save facebank + trial embeddings
                 if embeddings_dir is not None:
                     save_embeddings_locally(
-                        embeddings_dir, 
-                        model_name, 
-                        trial_embeddings, 
-                        bank_embeddings, 
-                        facebank_dataset
+                        embeddings_dir,
+                        model_name,
+                        trial_embeddings,
+                        bank_embeddings,
+                        facebank_dataset,
                     )
 
                 base = {
@@ -193,14 +198,20 @@ def run_single_model_cfmt(
       test_embeddings   [n_trials, 3, D] numpy
       study_embeddings  [n_study_faces, D] numpy
     """
-    trials = organize_trials_for_single_model(cfmt_dataset, facebank_dataset, subject_mapper, heldout)
+    trials = organize_trials_for_single_model(
+        cfmt_dataset, facebank_dataset, subject_mapper, heldout
+    )
 
     # embed every test face and every study face
-    test_images = torch.cat([t["images"] for t in trials]).to(device=device, dtype=dtype)
+    test_images = torch.cat([t["images"] for t in trials]).to(
+        device=device, dtype=dtype
+    )
     study_images = facebank_dataset.get_all_images().to(device=device, dtype=dtype)
     test_embs_raw = chunk(model, test_images, batch_size)  # [n_trials*3, D]
 
-    test_emb = rearrange(test_embs_raw, "(trial face) d -> trial face d", face=3) # [n_trials, 3, D]
+    test_emb = rearrange(
+        test_embs_raw, "(trial face) d -> trial face d", face=3
+    )  # [n_trials, 3, D]
     facebank_emb = chunk(model, study_images, batch_size)  # [n_study_faces, D]
 
     # score each trial: its 3 test faces vs. the target's study faces
@@ -210,14 +221,15 @@ def run_single_model_cfmt(
             faces=faces,
             facebank=facebank_emb[trial["study_rows"]],
             key=trial["key"],
-
         )
-        rows.append({
-            "trial_idx": trial_idx,
-            "identity": trial["identity"],
-            "view": trial["view"],
-            **cfmt_trial_results,
-        })
+        rows.append(
+            {
+                "trial_idx": trial_idx,
+                "identity": trial["identity"],
+                "view": trial["view"],
+                **cfmt_trial_results,
+            }
+        )
 
     accuracy = sum(r["correct"] for r in rows) / len(rows)
 
@@ -243,26 +255,27 @@ def run_single_trial_cfmt(faces, facebank, key, one_indexed_key=True):
     facebank [num_ground_truth, D] the target identity's study faces
 
     Take the cosine similarity between each of the test faces and the ground truth faces.
-    Then average the similarities for each test face to get the final score. 
+    Then average the similarities for each test face to get the final score.
 
     (mean of cosine similarities)
     """
 
     if faces.shape[-1] != facebank.shape[-1]:
-        raise ValueError(f"Embedding dims differ: {faces.shape[-1]} vs {facebank.shape[-1]}")
+        raise ValueError(
+            f"Embedding dims differ: {faces.shape[-1]} vs {facebank.shape[-1]}"
+        )
     if faces.shape[0] != 3:
         raise ValueError(f"Expected 3 test faces, got {faces.shape[0]}")
 
     # float32 so low-precision sweeps (fp16/bf16) don't cause near-ties
     similarity = cosine_similarity(
-        faces.float()[:, None, :], 
-        facebank.float()[None, :, :], dim=-1
+        faces.float()[:, None, :], facebank.float()[None, :, :], dim=-1
     )  # [3, num_ground_truth]
 
     face_scores = similarity.mean(dim=-1).cpu().tolist()  # [3]
 
     # key is 1-indexed if one_indexed_key is True. usually is so!
-    target_idx = key - 1 if one_indexed_key else key  
+    target_idx = key - 1 if one_indexed_key else key
     chosen_idx = face_scores.index(max(face_scores))  # first face wins ties
     best_distractor_score = max(s for i, s in enumerate(face_scores) if i != target_idx)
 
@@ -283,17 +296,21 @@ def run_single_trial_cfmt(faces, facebank, key, one_indexed_key=True):
 
 
 ######################################################################
-# 
-# Utils 
-# 
+#
+# Utils
+#
 ######################################################################
 
 
 def chunk(model, images, batch_size):
-    return torch.cat([model(images[i : i + batch_size]) for i in range(0, len(images), batch_size)])
+    return torch.cat(
+        [model(images[i : i + batch_size]) for i in range(0, len(images), batch_size)]
+    )
 
 
-def save_embeddings_locally(emb_dir, model_name, trial_embeddings, bank_embeddings, facebank_dataset):
+def save_embeddings_locally(
+    emb_dir, model_name, trial_embeddings, bank_embeddings, facebank_dataset
+):
     np.save(os.path.join(emb_dir, f"{model_name}_trial.npy"), trial_embeddings)
     np.save(os.path.join(emb_dir, f"{model_name}_facebank.npy"), bank_embeddings)
 
@@ -301,12 +318,16 @@ def save_embeddings_locally(emb_dir, model_name, trial_embeddings, bank_embeddin
     if not os.path.exists(labels_path):
         labels = [
             {"file": fn, "label": lb, "view": vw}
-            for fn, lb, vw in zip(facebank_dataset.files, facebank_dataset.labels, facebank_dataset.views)
+            for fn, lb, vw in zip(
+                facebank_dataset.files, facebank_dataset.labels, facebank_dataset.views
+            )
         ]
         save_json(labels, labels_path)
 
 
-def organize_trials_for_single_model(cfmt_dataset, facebank_dataset, subject_mapper, heldout):
+def organize_trials_for_single_model(
+    cfmt_dataset, facebank_dataset, subject_mapper, heldout
+):
     """
     One dict per CFMT trial: its 3 test images, answer key, target identity,
     and the facebank rows of that identity's study faces.
@@ -318,21 +339,27 @@ def organize_trials_for_single_model(cfmt_dataset, facebank_dataset, subject_map
             raise ValueError(f"Trial {len(trials)} has {len(images)} faces, expected 3")
 
         # handle CFMT trial name styles. will need to be changed depending on what dataset style you are using :)
-        name, view = subject_mapper(label=batch["label"][0], candidates=facebank_dataset.labels)
+        name, view = subject_mapper(
+            label=batch["label"][0], candidates=facebank_dataset.labels
+        )
 
         ### NOTE: IMPORTANT! determine which view to exclude based on whether this is a held-out trial
         excluded_view = view if heldout else "all"  # "all" keeps every view
 
         study_rows = facebank_dataset.facebank_indices(name, excluded_view)
         if not study_rows:
-            raise ValueError(f"No study face for {name!r} (held-out view {excluded_view!r})")
+            raise ValueError(
+                f"No study face for {name!r} (held-out view {excluded_view!r})"
+            )
 
-        trials.append({
-            "images": images,
-            "key": batch["key"].item(),
-            "identity": name,
-            "view": view,
-            "study_rows": study_rows,
-        })
-        
+        trials.append(
+            {
+                "images": images,
+                "key": batch["key"].item(),
+                "identity": name,
+                "view": view,
+                "study_rows": study_rows,
+            }
+        )
+
     return trials
